@@ -26,7 +26,7 @@ function ask(a) { //台幣換外幣-賣匯
     return str;
 }
 
-function bid(b) { //台幣換外幣-賣匯
+function bid(b) { //外幣換台幣-買匯
     var max = -1, str = "";
     for (var num = Math.floor(Math.floor(minimum / b * 20) / 20); num <= Math.floor(Math.floor(minimum / b * 20) / 20.0) + 50; num += Math.pow(10, -smallest_unit))
     {
