@@ -17,7 +17,7 @@ function ask(a) { //台幣換外幣-賣匯
 
         if ((Math.floor(temp * 10) % 10 <= 4) && (temp2 / num <= min)) {
             min = temp2 / num;
-            str += newLine(temp.toFixed(5), num.toFixed(smallest_unit), min.toFixed(5));
+            str += newLine(num.toFixed(smallest_unit), temp.toFixed(5), min.toFixed(5));
         }
     }
     str = str.slice(0, str.length - 1);
@@ -34,7 +34,7 @@ function bid(b) { //外幣換台幣-買匯
 
         if ((Math.floor(temp * 10) % 10 >= 5) && (temp2 / num >= max)) {
             max = temp2 / num;
-            str += newLine(temp.toFixed(5), num.toFixed(smallest_unit), max.toFixed(5));
+            str += newLine(num.toFixed(smallest_unit), temp.toFixed(5), max.toFixed(5));
         }
     }
     str = str.slice(0, str.length - 1);
@@ -68,11 +68,9 @@ function doPost(e) { //處理 LineBot Post Request
                     else if (!isNaN(Number(text))) {
                         text = Number(text);
                         if (text > 0)
-                            LineBotReply(String(ask(text)), String(replyToken));
-                        else if (text < 0)
-                            LineBotReply(String(bid(-text)), String(replyToken));
+                            LineBotReply(String("台幣換外幣-賣匯：\n" + ask(text)), String("外幣換台幣-買匯：\n" + bid(text)), String(replyToken));
                         else
-                            LineBotReply("輸入不可為0", String(replyToken));
+                            LineBotReply("輸入需大於0", String(replyToken));
                     }
                     else
                         LineBotReply(String(text), String(replyToken));
@@ -85,8 +83,18 @@ function doPost(e) { //處理 LineBot Post Request
 
 Auth = defaultSheet.getRange("C2").getValues(); //從試算表取得 LineBot Auth
 
-function LineBotReply(str, replyToken) { //回覆 Line Bot 訊息
-    url = "https://api.line.me/v2/bot/message/reply";
+function LineBotReply(...values) { //回覆 Line Bot 訊息
+    var replyToken = values.pop();
+    var url = "https://api.line.me/v2/bot/message/reply";
+    var json = {
+        "replyToken": replyToken,
+        "messages": [
+        ]
+    }
+    var i = 0;
+    values.forEach(value => {
+        json.messages.push({"type":"text", "text":value});
+    });
     var options = {
         "async": true,
         "crossDomain": true,
@@ -95,15 +103,7 @@ function LineBotReply(str, replyToken) { //回覆 Line Bot 訊息
             "Content-Type": "application/json",
             "Authorization": "Bearer " + Auth
         },
-        "payload": JSON.stringify({
-            "replyToken": replyToken,
-            "messages": [
-                {
-                    "type": "text",
-                    "text": str
-                }
-            ]
-        })
+        "payload": JSON.stringify(json)
     };
     var response = UrlFetchApp.fetch(url, options);
 }
