@@ -64,7 +64,16 @@ function doPost(e) { //處理 LineBot Post Request
                 if (message.type == "text") {
                     var text = message.text;
                     if (text == "取得 userID")
-                        LineBotReply(String("你的 userID 是：" + userId), String(replyToken));
+                        LineBotReplyID(String(userId), String(replyToken));
+                    else if (!isNaN(Number(text))) {
+                        text = Number(text);
+                        if (text > 0)
+                            LineBotReply(String(ask(text)), String(replyToken));
+                        else if (text < 0)
+                            LineBotReply(String(bid(-text)), String(replyToken));
+                        else
+                            LineBotReply("輸入不可為0", String(replyToken));
+                    }
                     else
                         LineBotReply(String(text), String(replyToken));
                 }
