@@ -51,3 +51,51 @@ function newLine(...text){
     str = str.slice(0,str.length-1) + "\n";
     return str;
 }
+
+function doPost(e) {
+    var param = e.postData.contents;
+    Logger.log(param);
+    var json = JSON.parse(param).events;
+    if (json != null) {
+        for (i in json) {
+            var replyToken = json[i].replyToken;
+            var userId = json[i].source.userId;
+            if (json[i].type == "message") {
+                var message = json[i].message;
+                if (message.type == "text") {
+                    var text = message.text;
+                    if (text == "取得 userID")
+                        LineBotReply(String("你的 userID 是：" + userId), String(replyToken));
+                    else
+                        LineBotReply(String(text), String(replyToken));
+                }
+            }
+        }
+    }
+    return;
+}
+
+Auth = "XK1ik8s6U6pcYUiVwINNB3zPWyMaV7S8HpHyvt2ehftZuZVEO1UgClQzY1HiKC0WqnpFj12XVnpouXHWnwiOmYzBvUyJUPSoAtk20n6DdIK75k62VWCwxX82VCXS7mqS2z/49gmdpC4m1Ic1bEI/QAdB04t89/1O/w1cDnyilFU="
+
+function LineBotReply(str, replyToken) {
+    url = "https://api.line.me/v2/bot/message/reply";
+    var options = {
+        "async": true,
+        "crossDomain": true,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + Auth
+        },
+        "payload": JSON.stringify({
+            "replyToken": replyToken,
+            "messages": [
+                {
+                    "type": "text",
+                    "text": str
+                }
+            ]
+        })
+    };
+    var response = UrlFetchApp.fetch(url, options);
+}
