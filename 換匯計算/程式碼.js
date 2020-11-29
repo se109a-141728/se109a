@@ -1,3 +1,6 @@
+var SpreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+var defaultSheet = SpreadSheet.getSheetByName("default");
+
 function myFunction() {
   
 }
@@ -75,7 +78,7 @@ function doPost(e) {
     return;
 }
 
-Auth = "XK1ik8s6U6pcYUiVwINNB3zPWyMaV7S8HpHyvt2ehftZuZVEO1UgClQzY1HiKC0WqnpFj12XVnpouXHWnwiOmYzBvUyJUPSoAtk20n6DdIK75k62VWCwxX82VCXS7mqS2z/49gmdpC4m1Ic1bEI/QAdB04t89/1O/w1cDnyilFU="
+Auth = defaultSheet.getRange("C2").getValues();
 
 function LineBotReply(str, replyToken) {
     url = "https://api.line.me/v2/bot/message/reply";
