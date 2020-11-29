@@ -58,22 +58,19 @@ function doPost(e) { //處理 LineBot Post Request
     if (json != null) {
         for (i in json) {
             var replyToken = json[i].replyToken;
-            var userId = json[i].source.userId;
             if (json[i].type == "message") {
                 var message = json[i].message;
                 if (message.type == "text") {
                     var text = message.text;
-                    if (text == "取得 userID")
-                        LineBotReplyID(String(userId), String(replyToken));
-                    else if (!isNaN(Number(text))) {
+                    if (!isNaN(Number(text))) {
                         text = Number(text);
                         if (text > 0)
                             LineBotReply(String("台幣換外幣-賣匯：\n" + ask(text)), String("外幣換台幣-買匯：\n" + bid(text)), String(replyToken));
                         else
-                            LineBotReply("輸入需大於0", String(replyToken));
+                            LineBotReply("請輸入大於0的數字", String(replyToken));
                     }
                     else
-                        LineBotReply(String(text), String(replyToken));
+                        LineBotReply("請輸入大於0的數字", String(replyToken));
                 }
             }
         }
