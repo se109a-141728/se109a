@@ -1,44 +1,121 @@
 var SpreadSheet = SpreadsheetApp.getActiveSpreadsheet(); //取得試算表
-var defaultSheet = SpreadSheet.getSheetByName("default"); //取得工作表
+var defaultSheet = SpreadSheet.getSheetByName("default"); //取得預設工作表
+var userSheet = SpreadSheet.getSheetByName("user"); //取得使用者工作表
+var minimum = defaultSheet.getRange("A2").getValues(); //設定最小換匯金額
+var smallest_unit = defaultSheet.getRange("B2").getValues(); //設定最小換匯單位
 
 function myFunction() {
-    
+
 }
 
-var minimum = 100; //設定最小換匯金額
-var smallest_unit = 2; //設定最小換匯單位
+function doPost(e) { //處理 LineBot Post Request
+    var param = e.postData.contents;
+    var json = JSON.parse(param).events;
+    if (json != null) {
+        for (i in json) {
+            var replyToken = json[i].replyToken;
+            if (json[i].type == "message") {
+                var message = json[i].message;
+                if (message.type == "text") {
+                    var text = message.text;
+                    var userId = json[i].source.userId;
+                    var userMinSu = getMinSu(userId);
+                    if (!isNaN(Number(text))) {
+                        text = Number(text);
+                        if (text > 0)
+                            LineBotReply(String("台幣換外幣-賣匯：\n" + ask(text, userMinSu)), String("外幣換台幣-買匯：\n" + bid(text, userMinSu)), String(replyToken));
+                        else
+                            LineBotReply("請輸入大於0的數字", String(replyToken));
+                    }
+                    else {
+                        if (text.indexOf("設定最小換匯金額(台幣)：") == 0) {
+                            userMinSu[0] = text.split("：")[1];
+                            if (isInt(userMinSu[0]) && text.split("：").length == 2) {
+                                setup(userId, userMinSu);
+                                LineBotReply("最小換匯金額設定成功", String(replyToken));
+                            }
+                            else
+                                LineBotReply("請輸入正整數", String(replyToken));
+                        }
+                        else if (text.indexOf("設定最小換匯單位（小數點後幾位）：") == 0) {
+                            userMinSu[1] = text.split("：")[1];
+                            if (isInt(userMinSu[1]) && text.split("：").length == 2) {
+                                setup(userId, userMinSu);
+                                LineBotReply("最小換匯單位設定成功", String(replyToken));
+                            }
+                            else
+                                LineBotReply("請輸入正整數", String(replyToken));
+                        }
+                        else
+                            LineBotReply("請輸入大於0的數字", String(replyToken));
+                    }
+                }
+            }
+        }
+    }
+    return;
+}
 
-function ask(a) { //台幣換外幣-賣匯
+function getMinSu(userID) { //取得使用者設定
+    var userIDs = userSheet.getRange("A2:A").getValues();
+    var index = userIDs.findIndex(element => element == userID);
+    var min = minimum;
+    var su = smallest_unit;
+    if (index != -1) {
+        min = userSheet.getRange(index + 2, 2).getValues();
+        su = userSheet.getRange(index + 2, 3).getValues();
+    }
+    return ([min, su])
+}
+
+function setup(userID, userMinSu) { //使用者設定
+    var userIDs = userSheet.getRange("A2:A").getValues();
+    var index = userIDs.findIndex(element => element == userID);
+    if (index == -1) {
+        index = userSheet.getLastRow() - 1;
+        userSheet.getRange(index + 2, 1).setValue(userID);
+    }
+    userSheet.getRange(index + 2, 2).setValue(userMinSu[0]);
+    userSheet.getRange(index + 2, 3).setValue(userMinSu[1]);
+}
+
+function isInt(n) {
+    return (!isNaN(Number(n)) && n % 1 === 0)
+}
+
+function ask(a, userMinSu) { //台幣換外幣-賣匯
     var min = 999, str = "";
-    for (var num = Math.floor(Math.floor(minimum / a * 20) / 20); num <= Math.floor(Math.floor(minimum / a * 20) / 20.0) + 50; num += Math.pow(10, -smallest_unit)) {
+    var UserMin = userMinSu[0];
+    var UserSu = userMinSu[1];
+    for (var num = Math.floor(Math.floor(UserMin / a * 20) / 20); num <= Math.floor(Math.floor(UserMin / a * 20) / 20.0) + 50; num += Math.pow(10, -UserSu)) {
         var temp = a * num;
-        if (temp < minimum - 0.5) continue;
+        if (temp < UserMin - 0.5) continue;
         var temp2 = Math.floor(temp);
 
         if ((Math.floor(temp * 10) % 10 <= 4) && (temp2 / num <= min)) {
             min = temp2 / num;
-            str += newLine(num.toFixed(smallest_unit), temp.toFixed(5), min.toFixed(5));
+            str += newLine(num.toFixed(UserSu), temp.toFixed(5), min.toFixed(5));
         }
     }
     str = str.slice(0, str.length - 1);
-    Logger.log(str);
     return str;
 }
 
-function bid(b) { //外幣換台幣-買匯
+function bid(b, userMinSu) { //外幣換台幣-買匯
     var max = -1, str = "";
-    for (var num = Math.floor(Math.floor(minimum / b * 20) / 20); num <= Math.floor(Math.floor(minimum / b * 20) / 20.0) + 50; num += Math.pow(10, -smallest_unit)) {
+    var UserMin = userMinSu[0];
+    var UserSu = userMinSu[1];
+    for (var num = Math.floor(Math.floor(UserMin / b * 20) / 20); num <= Math.floor(Math.floor(UserMin / b * 20) / 20.0) + 50; num += Math.pow(10, -UserSu)) {
         var temp = b * num;
-        if (temp < minimum - 0.5) continue;
+        if (temp < UserMin - 0.5) continue;
         var temp2 = Math.floor(temp) + 1;
 
         if ((Math.floor(temp * 10) % 10 >= 5) && (temp2 / num >= max)) {
             max = temp2 / num;
-            str += newLine(num.toFixed(smallest_unit), temp.toFixed(5), max.toFixed(5));
+            str += newLine(num.toFixed(UserSu), temp.toFixed(5), max.toFixed(5));
         }
     }
     str = str.slice(0, str.length - 1);
-    Logger.log(str);
     return str;
 }
 
@@ -51,36 +128,8 @@ function newLine(...text) { //將傳入的變數以空格隔開並換行
     return str;
 }
 
-function doPost(e) { //處理 LineBot Post Request
-    var param = e.postData.contents;
-    Logger.log(param);
-    var json = JSON.parse(param).events;
-    if (json != null) {
-        for (i in json) {
-            var replyToken = json[i].replyToken;
-            if (json[i].type == "message") {
-                var message = json[i].message;
-                if (message.type == "text") {
-                    var text = message.text;
-                    if (!isNaN(Number(text))) {
-                        text = Number(text);
-                        if (text > 0)
-                            LineBotReply(String("台幣換外幣-賣匯：\n" + ask(text)), String("外幣換台幣-買匯：\n" + bid(text)), String(replyToken));
-                        else
-                            LineBotReply("請輸入大於0的數字", String(replyToken));
-                    }
-                    else
-                        LineBotReply("請輸入大於0的數字", String(replyToken));
-                }
-            }
-        }
-    }
-    return;
-}
-
-Auth = defaultSheet.getRange("C2").getValues(); //從試算表取得 LineBot Auth
-
 function LineBotReply(...values) { //回覆 Line Bot 訊息
+    var Auth = defaultSheet.getRange("C2").getValues(); //從試算表取得 LineBot Auth
     var replyToken = values.pop();
     var url = "https://api.line.me/v2/bot/message/reply";
     var json = {
@@ -90,7 +139,7 @@ function LineBotReply(...values) { //回覆 Line Bot 訊息
     }
     var i = 0;
     values.forEach(value => {
-        json.messages.push({"type":"text", "text":value});
+        json.messages.push({ "type": "text", "text": value });
     });
     var options = {
         "async": true,
