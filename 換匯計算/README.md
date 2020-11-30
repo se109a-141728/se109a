@@ -1,7 +1,9 @@
+# 操作說明
 1. 加入line@ 帳號
     * Line@帳號: [@623wfvys](https://lin.ee/2vXjHNl)
+    ![](./line@qrcode.jpg)
 
-0. 各版本說明
+2. 各版本說明
 
     * v1.0.0
         * 輸入當前外幣匯率進行轉
