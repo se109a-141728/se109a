@@ -31,7 +31,7 @@ function doPost(e) { //處理 LineBot Post Request
                         if (text.indexOf("設定最小換匯金額(台幣)：") == 0) {
                             userMinSu[0] = text.split("：")[1];
                             if (isInt(userMinSu[0]) && text.split("：").length == 2) {
-                                setup(userId, userMinSu);
+                                setupMinSu(userId, userMinSu);
                                 LineBotReply("最小換匯金額設定成功", String(replyToken));
                             }
                             else
@@ -40,11 +40,15 @@ function doPost(e) { //處理 LineBot Post Request
                         else if (text.indexOf("設定最小換匯單位（小數點後幾位）：") == 0) {
                             userMinSu[1] = text.split("：")[1];
                             if (isInt(userMinSu[1]) && text.split("：").length == 2) {
-                                setup(userId, userMinSu);
+                                setupMinSu(userId, userMinSu);
                                 LineBotReply("最小換匯單位設定成功", String(replyToken));
                             }
                             else
                                 LineBotReply("請輸入正整數", String(replyToken));
+                        }
+                        else if (text == "重置") {
+                            resetMinSu(userId);
+                            LineBotReply("重置成功", String(replyToken));
                         }
                         else
                             LineBotReply("請輸入大於0的數字", String(replyToken));
@@ -68,7 +72,7 @@ function getMinSu(userID) { //取得使用者設定
     return ([min, su])
 }
 
-function setup(userID, userMinSu) { //使用者設定
+function setupMinSu(userID, userMinSu) { //使用者設定
     var userIDs = userSheet.getRange("A2:A").getValues();
     var index = userIDs.findIndex(element => element == userID);
     if (index == -1) {
@@ -77,6 +81,13 @@ function setup(userID, userMinSu) { //使用者設定
     }
     userSheet.getRange(index + 2, 2).setValue(userMinSu[0]);
     userSheet.getRange(index + 2, 3).setValue(userMinSu[1]);
+}
+
+function resetMinSu(userID) {
+    var userIDs = userSheet.getRange("A2:A").getValues();
+    var index = userIDs.findIndex(element => element == userID);
+    if (index != -1)
+        userSheet.deleteRow(index + 2);
 }
 
 function isInt(n) {
