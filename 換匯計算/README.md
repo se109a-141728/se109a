@@ -3,7 +3,8 @@
 * 輸入當前外幣匯率，並透過四捨五入找出最划算換匯金額。
 ## 操作說明
 1. 加入line@ 帳號：[@623wfvys](https://lin.ee/2vXjHNl)
-[<img src="..\src\line@qrcode.jpg">](https://lin.ee/2vXjHNl)
+
+   [<img src="..\src\line@qrcode.jpg">](https://lin.ee/2vXjHNl)
 
 1. 輸入當前外幣匯率進行轉換
 
