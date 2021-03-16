@@ -23,7 +23,7 @@ function doPost(e) { //處理 LineBot Post Request
                     if (!isNaN(Number(text))) {
                         text = Number(text);
                         if (text > 0)
-                            LineBotReply(String("台幣換外幣-賣匯：\n" + ask(text, userMinSu)), String("外幣換台幣-買匯：\n" + bid(text, userMinSu)), String(replyToken));
+                            LineBotReply(String("台幣換外幣-賣匯：" + ask(text, userMinSu)), String("外幣換台幣-買匯：" + bid(text, userMinSu)), String(replyToken));
                         else
                             LineBotReply("請輸入大於0的數字", String(replyToken));
                     }
@@ -105,10 +105,9 @@ function ask(a, userMinSu) { //台幣換外幣-賣匯
 
         if ((Math.floor(temp * 10) % 10 <= 4) && (temp2 / num <= min)) {
             min = temp2 / num;
-            str += newLine(num.toFixed(UserSu), temp.toFixed(5), min.toFixed(5));
+            str = num.toFixed(UserSu) + newLine(num.toFixed(UserSu), temp.toFixed(5), min.toFixed(5));
         }
     }
-    str = str.slice(0, str.length - 1);
     return str;
 }
 
@@ -123,19 +122,18 @@ function bid(b, userMinSu) { //外幣換台幣-買匯
 
         if ((Math.floor(temp * 10) % 10 >= 5) && (temp2 / num >= max)) {
             max = temp2 / num;
-            str += newLine(num.toFixed(UserSu), temp.toFixed(5), max.toFixed(5));
+            str = num.toFixed(UserSu) + newLine(num.toFixed(UserSu), temp.toFixed(5), max.toFixed(5));
         }
     }
-    str = str.slice(0, str.length - 1);
     return str;
 }
 
 function newLine(...text) { //將傳入的變數以空格隔開並換行
-    var str = ""
+    var str = "\n"
     text.forEach(function (t) {
         str += t + " "
     })
-    str = str.slice(0, str.length - 1) + "\n";
+    str = str.slice(0, str.length - 1);
     return str;
 }
 
