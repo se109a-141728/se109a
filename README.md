@@ -33,4 +33,4 @@
 
 7. 完成後，整合並測試 (integration)
 
-8. 發布專案 (publish)
+8. [發布專案 (publish)](https://github.com/se109a-141728/se109a/releases/)
