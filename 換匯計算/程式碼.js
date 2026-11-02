@@ -39,12 +39,12 @@ function doPost(e) { //處理 LineBot Post Request
                         }
                         else if (text.indexOf("設定最小換匯單位（小數點後幾位）：") == 0) {
                             userMinSu[1] = text.split("：")[1];
-                            if (isInt(userMinSu[1]) && text.split("：").length == 2) {
+                            if (isValidSu(userMinSu[1]) && text.split("：").length == 2) {
                                 setupMinSu(userId, userMinSu);
                                 LineBotReply("最小換匯單位設定成功", String(replyToken));
                             }
                             else
-                                LineBotReply("請輸入正整數", String(replyToken));
+                                LineBotReply("請輸入 0～4 的整數", String(replyToken));
                         }
                         else if (text == "重置") {
                             resetMinSu(userId);
@@ -95,9 +95,9 @@ function isInt(n) {
     return (!isNaN(num) && Number.isInteger(num) && num > 0);
 }
 
-function isValidSu(n) { //外幣小數位數須介於 1~4 之間
+function isValidSu(n) { //外幣小數位數須介於 0~4 之間
     var num = Number(n);
-    return (!isNaN(num) && Number.isInteger(num) && num >= 1 && num <= 4);
+    return (!isNaN(num) && Number.isInteger(num) && num >= 0 && num <= 4);
 }
 
 function bestExchange(rateInput, userMinSu, direction) {
@@ -105,7 +105,7 @@ function bestExchange(rateInput, userMinSu, direction) {
     const digits = Number(userMinSu[1]);
 
     if (!Number.isSafeInteger(min) || min <= 0 ||
-        !Number.isInteger(digits) || digits < 1 || digits > 4) {
+        !Number.isInteger(digits) || digits < 0 || digits > 4) {
         return "";
     }
 
@@ -186,8 +186,11 @@ function bestExchange(rateInput, userMinSu, direction) {
 
         if (!proven) continue;
 
-        const amount = (bestIndex / scale).toString() + "." +
-            (bestIndex % scale).toString().padStart(digits, "0");
+        const amount =
+            (bestIndex / scale).toString() +
+            (digits > 0
+                ? "." + (bestIndex % scale).toString().padStart(digits, "0")
+                : "");
 
         const rawTWD = fixed(P * bestIndex, D, 5);
         const effectiveRate = fixed(
