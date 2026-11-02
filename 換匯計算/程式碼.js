@@ -91,21 +91,37 @@ function resetMinSu(userID) {
 }
 
 function isInt(n) {
-    return (!isNaN(Number(n)) && n % 1 === 0)
+    var num = Number(n);
+    return (!isNaN(num) && Number.isInteger(num) && num > 0);
+}
+
+function isValidSu(n) { //外幣小數位數須介於 1~4 之間
+    var num = Number(n);
+    return (!isNaN(num) && Number.isInteger(num) && num >= 1 && num <= 4);
 }
 
 function ask(a, userMinSu) { //台幣換外幣-賣匯
-    var min = 999, str = "";
-    var UserMin = userMinSu[0];
-    var UserSu = userMinSu[1];
-    for (var num = Math.floor(Math.floor(UserMin / a * 20) / 20); num <= Math.floor(Math.floor(UserMin / a * 20) / 20.0) + 50; num += Math.pow(10, -UserSu)) {
-        var temp = a * num;
-        if (temp < UserMin - 0.5) continue;
-        var temp2 = Math.floor(temp);
+    var min = Infinity, str = "";
+    var UserMin = Number(userMinSu[0]);
+    var UserSu = Number(userMinSu[1]);
+    if (!isValidSu(UserSu) || !isInt(UserMin)) return "";
 
-        if ((Math.floor(temp * 10) % 10 <= 4) && (temp2 / num <= min)) {
-            min = temp2 / num;
-            str = num.toFixed(UserSu) + newLine(num.toFixed(UserSu), temp.toFixed(5), min.toFixed(5));
+    var scale = Math.pow(10, UserSu);
+    var startI = Math.ceil((UserMin - 0.5) * scale / a);
+    var endI = startI + Math.ceil(scale / a) + 1;
+
+    for (var i = startI; i <= endI; i++) {
+        var num = i / scale;
+        var twdRounded = a * i / scale;
+        if (Math.round(twdRounded) < UserMin) continue;
+
+        var tenthDigit = Math.floor(twdRounded * 10) % 10;
+        if (tenthDigit > 4) continue;
+
+        var effectiveRate = Math.floor(twdRounded) / num;
+        if (effectiveRate <= min) {
+            min = effectiveRate;
+            str = num.toFixed(UserSu) + newLine(num.toFixed(UserSu), twdRounded.toFixed(5), min.toFixed(5));
         }
     }
     return str;
@@ -113,25 +129,35 @@ function ask(a, userMinSu) { //台幣換外幣-賣匯
 
 function bid(b, userMinSu) { //外幣換台幣-買匯
     var max = -1, str = "";
-    var UserMin = userMinSu[0];
-    var UserSu = userMinSu[1];
-    for (var num = Math.floor(Math.floor(UserMin / b * 20) / 20); num <= Math.floor(Math.floor(UserMin / b * 20) / 20.0) + 50; num += Math.pow(10, -UserSu)) {
-        var temp = b * num;
-        if (temp < UserMin - 0.5) continue;
-        var temp2 = Math.floor(temp) + 1;
+    var UserMin = Number(userMinSu[0]);
+    var UserSu = Number(userMinSu[1]);
+    if (!isValidSu(UserSu) || !isInt(UserMin)) return "";
 
-        if ((Math.floor(temp * 10) % 10 >= 5) && (temp2 / num >= max)) {
-            max = temp2 / num;
-            str = num.toFixed(UserSu) + newLine(num.toFixed(UserSu), temp.toFixed(5), max.toFixed(5));
+    var scale = Math.pow(10, UserSu);
+    var startI = Math.ceil((UserMin - 0.5) * scale / b);
+    var endI = startI + Math.ceil(scale / b) + 1;
+
+    for (var i = startI; i <= endI; i++) {
+        var num = i / scale;
+        var twdRounded = b * i / scale;
+        if (Math.round(twdRounded) < UserMin) continue;
+
+        var tenthDigit = Math.floor(twdRounded * 10) % 10;
+        if (tenthDigit < 5) continue;
+
+        var effectiveRate = (Math.floor(twdRounded) + 1) / num;
+        if (effectiveRate >= max) {
+            max = effectiveRate;
+            str = num.toFixed(UserSu) + newLine(num.toFixed(UserSu), twdRounded.toFixed(5), max.toFixed(5));
         }
     }
     return str;
 }
 
 function newLine(...text) { //將傳入的變數以空格隔開並換行
-    var str = "\n"
+    var str = "\n";
     text.forEach(function (t) {
-        str += t + " "
+        str += t + " ";
     })
     str = str.slice(0, str.length - 1);
     return str;
