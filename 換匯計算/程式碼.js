@@ -100,58 +100,120 @@ function isValidSu(n) { //外幣小數位數須介於 1~4 之間
     return (!isNaN(num) && Number.isInteger(num) && num >= 1 && num <= 4);
 }
 
-function ask(a, userMinSu) { //台幣換外幣-賣匯
-    var min = Infinity, str = "";
-    var UserMin = Number(userMinSu[0]);
-    var UserSu = Number(userMinSu[1]);
-    if (!isValidSu(UserSu) || !isInt(UserMin)) return "";
+function bestExchange(rateInput, userMinSu, direction) {
+    const min = Number(userMinSu[0]);
+    const digits = Number(userMinSu[1]);
 
-    var scale = Math.pow(10, UserSu);
-    var startI = Math.ceil((UserMin - 0.5) * scale / a);
-    var endI = startI + Math.ceil(scale / a) + 1;
-
-    for (var i = startI; i <= endI; i++) {
-        var num = i / scale;
-        var twdRounded = a * i / scale;
-        if (Math.round(twdRounded) < UserMin) continue;
-
-        var tenthDigit = Math.floor(twdRounded * 10) % 10;
-        if (tenthDigit > 4) continue;
-
-        var effectiveRate = Math.floor(twdRounded) / num;
-        if (effectiveRate <= min) {
-            min = effectiveRate;
-            str = num.toFixed(UserSu) + newLine(num.toFixed(UserSu), twdRounded.toFixed(5), min.toFixed(5));
-        }
+    if (!Number.isSafeInteger(min) || min <= 0 ||
+        !Number.isInteger(digits) || digits < 1 || digits > 4) {
+        return "";
     }
-    return str;
+
+    const rateText = String(rateInput).trim();
+    if (!/^\d+(?:\.\d+)?$/.test(rateText)) return "";
+
+    const [integer, decimal = ""] = rateText.split(".");
+    const P = BigInt(integer + decimal);
+    const Q = BigInt(10) ** BigInt(decimal.length);
+    if (P <= BigInt(0)) return "";
+
+    const scale = BigInt(10) ** BigInt(digits);
+    const D = Q * scale;
+    const ceilDiv = (a, b) => (a + b - BigInt(1)) / b;
+
+    function gcd(a, b) {
+        while (b !== BigInt(0)) [a, b] = [b, a % b];
+        return a;
+    }
+
+    function fixed(numerator, denominator, places) {
+        const factor = BigInt(10) ** BigInt(places);
+        const rounded = (BigInt(2) * numerator * factor + denominator) /
+            (BigInt(2) * denominator);
+
+        return (rounded / factor).toString() + "." +
+            (rounded % factor).toString().padStart(places, "0");
+    }
+
+    // 利用匯率的有理數特性，計算四捨五入可能產生的最大利益
+    const g = gcd(P, D);
+    const maxDown = ((D - BigInt(1)) / (BigInt(2) * g)) * g;
+    const firstUp = ceilDiv(D, BigInt(2) * g) * g;
+    const maxUp = firstUp < D ? D - firstUp : BigInt(0);
+
+    // 從四捨五入後符合最低台幣金額的位置開始
+    const lower = ceilDiv(
+        (BigInt(2) * BigInt(min) - BigInt(1)) * D,
+        BigInt(2) * P
+    );
+
+    let bestIndex = BigInt(0);
+    let bestTWD = BigInt(0);
+
+    const MAX_CANDIDATES = 60000;
+
+    for (
+        let index = lower > BigInt(0) ? lower : BigInt(1), tested = 0;
+        tested < MAX_CANDIDATES;
+        index++, tested++
+    ) {
+        const raw = P * index;
+        const twd = (BigInt(2) * raw + D) / (BigInt(2) * D);
+
+        if (twd < BigInt(min)) continue;
+
+        const better = bestIndex === BigInt(0) || (
+            direction === "ask"
+                ? twd * bestIndex < bestTWD * index
+                : twd * bestIndex > bestTWD * index
+        );
+
+        if (better) {
+            bestIndex = index;
+            bestTWD = twd;
+        }
+
+        // 判斷往後所有候選值是否都不可能更好
+        const next = index + BigInt(1);
+        const left = bestTWD * D * next;
+        const right = bestIndex * (
+            P * next + (direction === "ask" ? -maxDown : maxUp)
+        );
+
+        const proven = direction === "ask"
+            ? left <= right
+            : left >= right;
+
+        if (!proven) continue;
+
+        const amount = (bestIndex / scale).toString() + "." +
+            (bestIndex % scale).toString().padStart(digits, "0");
+
+        const rawTWD = fixed(P * bestIndex, D, 5);
+        const effectiveRate = fixed(
+            bestTWD * scale,
+            bestIndex,
+            5
+        );
+
+        return amount + newLine(
+            amount,
+            rawTWD,
+            effectiveRate
+        );
+    }
+
+    return `搜尋超過 ${MAX_CANDIDATES} 筆候選值，尚無法證明最佳解。`;
 }
 
-function bid(b, userMinSu) { //外幣換台幣-買匯
-    var max = -1, str = "";
-    var UserMin = Number(userMinSu[0]);
-    var UserSu = Number(userMinSu[1]);
-    if (!isValidSu(UserSu) || !isInt(UserMin)) return "";
+function ask(a, userMinSu) {
+    // 台幣換外幣：有效匯率越低越好
+    return bestExchange(a, userMinSu, "ask");
+}
 
-    var scale = Math.pow(10, UserSu);
-    var startI = Math.ceil((UserMin - 0.5) * scale / b);
-    var endI = startI + Math.ceil(scale / b) + 1;
-
-    for (var i = startI; i <= endI; i++) {
-        var num = i / scale;
-        var twdRounded = b * i / scale;
-        if (Math.round(twdRounded) < UserMin) continue;
-
-        var tenthDigit = Math.floor(twdRounded * 10) % 10;
-        if (tenthDigit < 5) continue;
-
-        var effectiveRate = (Math.floor(twdRounded) + 1) / num;
-        if (effectiveRate >= max) {
-            max = effectiveRate;
-            str = num.toFixed(UserSu) + newLine(num.toFixed(UserSu), twdRounded.toFixed(5), max.toFixed(5));
-        }
-    }
-    return str;
+function bid(b, userMinSu) {
+    // 外幣換台幣：有效匯率越高越好
+    return bestExchange(b, userMinSu, "bid");
 }
 
 function newLine(...text) { //將傳入的變數以空格隔開並換行
